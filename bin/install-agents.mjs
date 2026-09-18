@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 /**
- * 把「AutoBoard上报」技能安装到目标仓库，让 Cursor / Codex / Claude 都能发现它。
+ * Install the autoboard-report skill into target repos for Cursor / Codex / Claude.
  *
- *   node bin/install-agents.mjs                    安装到当前目录
+ *   node bin/install-agents.mjs                    install into cwd
  *   node bin/install-agents.mjs <repo路径...>
- *   node bin/install-agents.mjs --all              安装到 BOARD_SCAN_ROOT 下所有 git 仓库（默认 ~/code/ai）
- *   node bin/install-agents.mjs --check [repo]     只检查不写入
+ *   node bin/install-agents.mjs --all              install into all git repos under BOARD_SCAN_ROOT (default ~/code/ai)
+ *   node bin/install-agents.mjs --check [repo]     check only
  *   node bin/install-agents.mjs --board-url URL …
  *
- * 落地物：
- *   <repo>/.cursor/skills/AutoBoard上报/SKILL.md
- *   <repo>/.codex/skills/…/SKILL.md、.claude/skills/…/SKILL.md  → 软链到上面那份
- *   <repo>/AGENTS.md  追加/更新 autoboard 标记段
+ * Writes:
+ *   <repo>/.cursor/skills/autoboard-report/SKILL.md
+ *   <repo>/.codex/skills/…/SKILL.md and .claude/skills/…/SKILL.md  → symlink to the above
+ *   <repo>/AGENTS.md  append/update autoboard section
  *
- * 更省事：在目标仓库执行看板下发的一键命令（无需 clone 本仓库）：
+ * Or from a target repo (no need to clone this repo):
  *   curl -fsSL "$BOARD_URL/install.mjs" | node --input-type=module - --yes
  */
 import { existsSync, readdirSync } from 'node:fs';

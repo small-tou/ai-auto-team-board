@@ -72,15 +72,18 @@ function patchAgentsFile(repo, bundle, dryRun) {
   return { action: existing ? 'appended' : 'created' };
 }
 
-function removeLegacySkillDirs(repo, legacyName, dryRun) {
+function removeLegacySkillDirs(repo, legacyNames, dryRun) {
+  const names = Array.isArray(legacyNames) ? legacyNames : legacyNames ? [legacyNames] : [];
   for (const root of [
     join(repo, '.cursor', 'skills'),
     join(repo, '.codex', 'skills'),
     join(repo, '.claude', 'skills'),
   ]) {
-    const legacy = join(root, legacyName);
-    if (!existsSync(legacy) && !lstatSync(legacy, { throwIfNoEntry: false })) continue;
-    if (!dryRun) rmSync(legacy, { recursive: true, force: true });
+    for (const name of names) {
+      const legacy = join(root, name);
+      if (!existsSync(legacy) && !lstatSync(legacy, { throwIfNoEntry: false })) continue;
+      if (!dryRun) rmSync(legacy, { recursive: true, force: true });
+    }
   }
 }
 
@@ -94,7 +97,8 @@ function install(repo, bundle, dryRun) {
   ];
 
   if (!dryRun) {
-    removeLegacySkillDirs(repo, bundle.legacySkillName, dryRun);
+    const legacyNames = bundle.legacySkillNames || bundle.legacySkillName;
+    removeLegacySkillDirs(repo, legacyNames, dryRun);
     mkdirSync(cursorDir, { recursive: true });
     writeFileSync(join(cursorDir, 'SKILL.md'), bundle.skillMd, 'utf8');
     for (const dir of linkRoots) {
@@ -135,15 +139,28 @@ async function main() {
   }
 
   const label = repo.replace(homedir(), '~');
-  const paths = [
-    `.cursor/skills/AutoBoard上报/SKILL.md`,
-    `.codex/skills/AutoBoard上报/SKILL.md`,
-    `.claude/skills/AutoBoard上报/SKILL.md`,
-    `AGENTS.md`,
-  ];
 
   console.log(`看板：${boardUrl}`);
   console.log(`目标：${label}`);
+
+  let bundle;
+  try {
+    const res = await fetch(`${boardUrl}/api/install-bundle`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    bundle = await res.json();
+    if (!bundle?.skillMd || !bundle?.agentsSection) throw new Error('install-bundle 响应缺少字段');
+  } catch (err) {
+    console.error(`拉取安装包失败：${err.message}`);
+    process.exit(1);
+  }
+
+  const skillName = bundle.skillName || 'autoboard-report';
+  const paths = [
+    `.cursor/skills/${skillName}/SKILL.md`,
+    `.codex/skills/${skillName}/SKILL.md`,
+    `.claude/skills/${skillName}/SKILL.md`,
+    `AGENTS.md`,
+  ];
   console.log('将写入：');
   for (const p of paths) console.log(`  ${p}`);
 
@@ -157,17 +174,6 @@ async function main() {
       console.log('已取消');
       process.exit(0);
     }
-  }
-
-  let bundle;
-  try {
-    const res = await fetch(`${boardUrl}/api/install-bundle`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    bundle = await res.json();
-    if (!bundle?.skillMd || !bundle?.agentsSection) throw new Error('install-bundle 响应缺少字段');
-  } catch (err) {
-    console.error(`拉取安装包失败：${err.message}`);
-    process.exit(1);
   }
 
   const agents = install(repo, bundle, dryRun);

@@ -1,0 +1,1 @@
+../../../.cursor/skills/autoboard-report/SKILL.md

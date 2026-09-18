@@ -147,7 +147,7 @@ Or open the board UI → **安装到项目** → copy the command (it uses the c
 
 Writes:
 
-- `.cursor/skills/AutoBoard上报/SKILL.md`
+- `.cursor/skills/autoboard-report/SKILL.md`
 - `.codex/skills/…` and `.claude/skills/…` symlinks to that file
 - an `AGENTS.md` section (markers `<!-- autoboard:begin/end -->`)
 

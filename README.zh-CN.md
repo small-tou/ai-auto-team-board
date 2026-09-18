@@ -147,7 +147,7 @@ curl -fsSL "https://board.example.com/install.mjs" | node --input-type=module - 
 
 会写入：
 
-- `.cursor/skills/AutoBoard上报/SKILL.md`
+- `.cursor/skills/autoboard-report/SKILL.md`
 - `.codex/skills/…` 与 `.claude/skills/…` 指向该文件的符号链接
 - `AGENTS.md` 中一段说明（标记 `<!-- autoboard:begin/end -->`）
 

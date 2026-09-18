@@ -1,6 +1,7 @@
 /**
- * AutoBoard 安装用模板与落地逻辑（CLI / 服务端 /install-bundle 共用）。
- * 协议变更时：技能正文仍改 skills/AutoBoard上报/SKILL.md，AGENTS 段改这里的 renderAgentsSection。
+ * AutoBoard install templates and write logic (shared by CLI / server /install-bundle).
+ * On protocol changes: edit skills/autoboard-report/SKILL.md for the skill body,
+ * and renderAgentsSection here for the AGENTS.md section.
  */
 import { existsSync, lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -8,10 +9,11 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(here, '..');
-const TEMPLATE = join(REPO_ROOT, 'skills', 'AutoBoard上报', 'SKILL.md');
+const TEMPLATE = join(REPO_ROOT, 'skills', 'autoboard-report', 'SKILL.md');
 
-export const SKILL_NAME = 'AutoBoard上报';
-export const LEGACY_SKILL_NAME = '团队看板上报';
+export const SKILL_NAME = 'autoboard-report';
+/** Previous Chinese directory names removed on upgrade install. */
+export const LEGACY_SKILL_NAMES = ['团队看板上报', 'AutoBoard上报'];
 export const AGENTS_MARKER = '<!-- autoboard:begin -->';
 export const AGENTS_END = '<!-- autoboard:end -->';
 export const LEGACY_AGENTS_MARKER = '<!-- team-board:begin -->';
@@ -88,7 +90,7 @@ export function buildInstallBundle(boardUrl) {
     agentsEnd: AGENTS_END,
     legacyAgentsMarker: LEGACY_AGENTS_MARKER,
     legacyAgentsEnd: LEGACY_AGENTS_END,
-    legacySkillName: LEGACY_SKILL_NAME,
+    legacySkillNames: LEGACY_SKILL_NAMES,
   };
 }
 
@@ -135,9 +137,11 @@ function removeLegacySkillDirs(repo, dryRun) {
     join(repo, '.codex', 'skills'),
     join(repo, '.claude', 'skills'),
   ]) {
-    const legacy = join(root, LEGACY_SKILL_NAME);
-    if (!existsSync(legacy) && !lstatSync(legacy, { throwIfNoEntry: false })) continue;
-    if (!dryRun) rmSync(legacy, { recursive: true, force: true });
+    for (const name of LEGACY_SKILL_NAMES) {
+      const legacy = join(root, name);
+      if (!existsSync(legacy) && !lstatSync(legacy, { throwIfNoEntry: false })) continue;
+      if (!dryRun) rmSync(legacy, { recursive: true, force: true });
+    }
   }
 }
 

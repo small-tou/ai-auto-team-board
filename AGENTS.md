@@ -14,7 +14,7 @@ Auto board service: AI agents automatically record progress across projects. Zer
 | `public/index.html` | Single-file board UI; no framework, no build step |
 | `bin/board-report.mjs` | Unified report entry; hook and CLI dual mode |
 | `bin/install-agents.mjs` | Local installer into target repos (default: cwd) |
-| `skills/AutoBoard上报/SKILL.md` | Skill body template; `<BOARD_URL>` replaced on install |
+| `skills/autoboard-report/SKILL.md` | Skill body template; `<BOARD_URL>` replaced on install |
 
 ## Hard Constraints
 
@@ -23,7 +23,7 @@ Auto board service: AI agents automatically record progress across projects. Zer
 - **Report script must never block the conversation**: every path in `bin/board-report.mjs` must `exit 0`; hook mode must emit valid JSON. Do not introduce uncaught exceptions or long-blocking logic in this file.
 - **Status enum has only five values**: `open` / `in_progress` / `review` / `blocked` / `done`. Before adding a status, ask whether it belongs in `progress` instead — one reason this project exists is to replace free-text status columns.
 - **Event log is append-only**: `data/events.jsonl` is append-only, never rewritten. Skip bad lines on replay; a corrupt line must not prevent startup.
-- **Protocol changes must stay in sync in three places**: `src/schema.mjs`, `skills/AutoBoard上报/SKILL.md`, and `renderAgentsSection` in `src/install-assets.mjs`. Otherwise installed repos drift from the server. After changes, re-run `install-agents.mjs` or the board’s `/install.mjs` to refresh repos.
+- **Protocol changes must stay in sync in three places**: `src/schema.mjs`, `skills/autoboard-report/SKILL.md`, and `renderAgentsSection` in `src/install-assets.mjs`. Otherwise installed repos drift from the server. After changes, re-run `install-agents.mjs` or the board’s `/install.mjs` to refresh repos.
 
 ## Local Verification
 
@@ -87,5 +87,5 @@ curl -s -X POST https://autoboard.html-js.com/api/report -H 'content-type: appli
 - **Follow-ups for the same item must reuse the exact same `title`, or include the `id` from the first response**, or you get duplicates and `end` cannot compute duration
 - `{"ok":true,...}` means success; if the board is unreachable, skip and do not block the current work
 
-See skill `AutoBoard上报` for details.
+See skill `autoboard-report` for details.
 <!-- autoboard:end -->

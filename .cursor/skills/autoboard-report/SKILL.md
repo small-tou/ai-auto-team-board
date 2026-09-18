@@ -1,12 +1,12 @@
 ---
-name: AutoBoard上报
+name: autoboard-report
 description: >-
   把当前对话正在处理的线上问题排查、bug 或需求上报到 AutoBoard 自动看板。当你开始或结束排查线上问题、
   登记新的 bug/需求、确认要不要做、定位缺陷、开发功能、修复问题、推进需求、变更任务状态，
   或用户询问看板/进展时使用。每轮实质性工作结束前都应上报一次。
 ---
 
-# AutoBoard上报
+# autoboard-report
 
 AutoBoard（自动看板）https://autoboard.html-js.com 收集「每个项目当前在排查哪些线上问题、在做哪些 bug/需求、什么状态、
 最后一次进展是什么」。你在任何项目里做实质性工作时都要上报，这样其他人不用问就能看到进展。
