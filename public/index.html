@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>__BOARD_TITLE__</title>
+    <link rel="icon" href="__BOARD_ICON__" />
+    <style>
+      :root {
+        --bg: #07090c;
+        --bg-panel: #0c1016;
+        --bg-row: #0f141b;
+        --bg-row-alt: #11171f;
+        --line: #1c2530;
+        --line-strong: #2a3644;
+        --fg: #d4dbe3;
+        --fg-dim: #7b8794;
+        --fg-faint: #4c5764;
+        --accent: #4fd6be;
+        --incident: #ff7b72;
+        --pending: #58a6ff;
+        --confirmed: #39c5cf;
+        --progress: #d29922;
+        --review: #bc8cff;
+        --blocked: #f85149;
+        --done: #3fb950;
+        --rejected: #6e7681;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body { height: 100%; margin: 0; }
+
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font: 12px/1.5 ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 8px 14px;
+        border-bottom: 1px solid var(--line-strong);
+        background: var(--bg-panel);
+        flex: none;
+      }
+
+      .brand { color: var(--accent); font-weight: 700; letter-spacing: 0.08em; white-space: nowrap; flex: none; }
+      .brand::before { content: "▚ "; }
+
+      .stats { display: flex; gap: 16px; color: var(--fg-dim); flex: none; }
+      .stat { white-space: nowrap; }
+      .stat b { color: var(--fg); font-weight: 600; }
+
+      .spacer { flex: 1; }
+
+      #filter {
+        width: 260px;
+        padding: 3px 8px;
+        border: 1px solid var(--line-strong);
+        border-radius: 3px;
+        background: var(--bg);
+        color: var(--fg);
+        font: inherit;
+      }
+      #filter:focus { outline: none; border-color: var(--accent); }
+      #filter::placeholder { color: var(--fg-faint); }
+
+      .hint { color: var(--fg-faint); }
+      kbd {
+        padding: 0 4px;
+        border: 1px solid var(--line-strong);
+        border-radius: 2px;
+        background: var(--bg);
+        color: var(--fg-dim);
+      }
+
+      .install-btn {
+        flex: none;
+        padding: 3px 10px;
+        border: 1px solid var(--line-strong);
+        border-radius: 3px;
+        background: var(--bg);
+        color: var(--accent);
+        font: inherit;
+        cursor: pointer;
+      }
+      .install-btn:hover { border-color: var(--accent); }
+
+      .install-panel {
+        display: none;
+        flex: none;
+        padding: 10px 14px 12px;
+        border-bottom: 1px solid var(--line-strong);
+        background: var(--bg-panel);
+        gap: 8px;
+        flex-direction: column;
+      }
+      .install-panel.open { display: flex; }
+      .install-panel p { margin: 0; color: var(--fg-dim); }
+      .install-panel code.cmd {
+        display: block;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        background: var(--bg);
+        color: var(--fg);
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .install-actions { display: flex; gap: 8px; align-items: center; }
+      .install-actions button {
+        padding: 3px 10px;
+        border: 1px solid var(--line-strong);
+        border-radius: 3px;
+        background: var(--bg);
+        color: var(--fg);
+        font: inherit;
+        cursor: pointer;
+      }
+      .install-actions button:hover { border-color: var(--accent); color: var(--accent); }
+      .install-actions .copied { color: var(--done); }
+
+      main { flex: 1; display: flex; min-height: 0; }
+
+      #projects { flex: 1; overflow: auto; padding: 10px 14px 40px; }
+
+      aside {
+        width: 340px;
+        flex: none;
+        border-left: 1px solid var(--line-strong);
+        background: var(--bg-panel);
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .aside-title {
+        padding: 6px 12px;
+        border-bottom: 1px solid var(--line);
+        color: var(--fg-dim);
+        letter-spacing: 0.08em;
+        flex: none;
+      }
+      #stream { overflow: auto; padding: 6px 12px 30px; }
+
+      .ev { display: flex; gap: 8px; padding: 2px 0; color: var(--fg-dim); border-bottom: 1px dotted var(--line); }
+      .ev time { color: var(--fg-faint); flex: none; }
+      .ev .ev-body { min-width: 0; }
+      .ev .ev-proj { color: var(--accent); }
+      .ev .ev-text { color: var(--fg); word-break: break-word; }
+
+      /* 密集表格列数多，窄视口下改为横向滚动而不是把标题挤成竖排 */
+      .project { margin-bottom: 18px; border: 1px solid var(--line); border-radius: 4px; overflow-x: auto; }
+
+      .project-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        padding: 5px 10px;
+        background: var(--bg-panel);
+        border-bottom: 1px solid var(--line);
+      }
+      .project-name { color: var(--accent); font-weight: 700; }
+      .project-meta { color: var(--fg-faint); display: flex; gap: 10px; flex-wrap: wrap; }
+
+      .pill { color: var(--fg-dim); }
+      .pill b { color: var(--fg); }
+
+      table { width: 100%; min-width: 1080px; border-collapse: collapse; }
+      th {
+        padding: 3px 8px;
+        text-align: left;
+        color: var(--fg-faint);
+        font-weight: 400;
+        border-bottom: 1px solid var(--line);
+        white-space: nowrap;
+      }
+      td { padding: 3px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+      tbody tr { background: var(--bg-row); cursor: pointer; }
+      tbody tr:nth-child(even) { background: var(--bg-row-alt); }
+      tbody tr:hover { background: #151d27; }
+      tbody tr.probing-row { background: #1a1316; }
+      tbody tr.cursor { box-shadow: inset 2px 0 0 var(--accent); }
+      tbody tr.stale td { color: var(--fg-faint); }
+      /* 待确认放久了不能像其他没人动的条目一样淡出：它缺的是一次拍板，越旧越该扎眼 */
+      tbody tr.rotting .c-age { color: var(--progress); font-weight: 700; }
+
+      .c-kind { width: 60px; color: var(--fg-dim); white-space: nowrap; }
+      .c-probe { width: 104px; color: var(--fg-faint); white-space: nowrap; }
+      .c-id { width: 150px; color: var(--fg-dim); white-space: nowrap; }
+      .c-status { width: 106px; white-space: nowrap; }
+      .c-actor { width: 110px; color: var(--fg-dim); white-space: nowrap; }
+      .c-branch { width: 130px; color: var(--fg-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+      .c-age { width: 56px; color: var(--fg-faint); text-align: right; white-space: nowrap; }
+      .c-title { font-weight: 600; min-width: 220px; }
+      .c-progress { color: var(--fg-dim); min-width: 200px; }
+
+      .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+      .s-pending { color: var(--pending); } .s-pending .dot { background: var(--pending); }
+      .s-confirmed { color: var(--confirmed); } .s-confirmed .dot { background: var(--confirmed); }
+      .s-in_progress { color: var(--progress); } .s-in_progress .dot { background: var(--progress); }
+      .s-review { color: var(--review); } .s-review .dot { background: var(--review); }
+      .s-blocked { color: var(--blocked); } .s-blocked .dot { background: var(--blocked); }
+      .s-done { color: var(--done); } .s-done .dot { background: var(--done); }
+      .s-rejected { color: var(--rejected); } .s-rejected .dot { background: var(--rejected); }
+      /* 只在状态格里划掉，项目头的统计 pill 上划线会糊成一团 */
+      td.c-status.s-rejected { text-decoration: line-through; }
+
+      .k-incident { color: var(--incident); font-weight: 700; }
+      /* 排查中要一眼看见：闪烁点 + 实时秒表 */
+      .probing { color: var(--incident); }
+      .probing .dot { background: var(--incident); animation: blink 1.4s steps(2, start) infinite; }
+      @keyframes blink { 50% { opacity: 0.2; } }
+      .probed { color: var(--fg-faint); }
+      .stat.hot b { color: var(--incident); }
+
+      .timeline { background: #090d12; }
+      .timeline td { padding: 6px 10px 8px 24px; color: var(--fg-dim); }
+      .tl-row { display: flex; gap: 10px; padding: 1px 0; }
+      .tl-row time { color: var(--fg-faint); flex: none; }
+      .refs a { color: var(--pending); }
+
+      .empty { padding: 40px 10px; color: var(--fg-faint); text-align: center; }
+      .offline { color: var(--blocked); }
+
+      @media (max-width: 1400px) {
+        aside { width: 280px; }
+        .hint { display: none; }
+      }
+      @media (max-width: 1100px) {
+        aside { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span class="brand">__BOARD_TITLE__</span>
+      <div class="stats" id="stats"></div>
+      <span class="spacer"></span>
+      <button type="button" class="install-btn" id="install-toggle" title="把 skill 与 AGENTS.md 装进业务仓库">安装到项目</button>
+      <input id="filter" placeholder="过滤 项目/标题/负责人/状态…" autocomplete="off" />
+      <span class="hint"><kbd>/</kbd> 过滤 <kbd>j</kbd><kbd>k</kbd> 移动 <kbd>↵</kbd> 展开</span>
+    </header>
+
+    <div class="install-panel" id="install-panel">
+      <p>在<strong>要上报的 git 仓库根目录</strong>执行下面命令，写入 skill 与 <code>AGENTS.md</code>，再提交到该仓库。</p>
+      <code class="cmd" id="install-cmd"></code>
+      <div class="install-actions">
+        <button type="button" id="install-copy">复制命令</button>
+        <span id="install-copy-status" class="copied" hidden>已复制</span>
+      </div>
+      <p>1. 仓库根执行 → 2. 提交变更 → 3. Cursor / Codex / Claude 会按规则上报到本看板。</p>
+    </div>
+
+    <main>
+      <section id="projects"><div class="empty">正在加载…</div></section>
+      <aside>
+        <div class="aside-title">实时事件流</div>
+        <div id="stream"></div>
+      </aside>
+    </main>
+
+    <script>
+      // 排序按「谁最需要人管」：阻塞 > 在做 > 待评审 > 待确认（缺一次拍板）> 已确认待开工 > 终态
+      const STATUS_ORDER = ['blocked', 'in_progress', 'review', 'pending', 'confirmed', 'done', 'rejected'];
+      const STATUS_LABEL = {
+        pending: '待确认',
+        confirmed: '已确认',
+        in_progress: '开发中',
+        review: '待评审',
+        blocked: '阻塞',
+        done: '已完成',
+        rejected: '不做',
+      };
+      const CLOSED = new Set(['done', 'rejected']);
+      const KIND_LABEL = { incident: '线上', bug: 'bug', feature: 'feat', chore: 'chore' };
+      const KIND_ORDER = ['incident', 'bug', 'feature', 'chore'];
+      const EVENT_LABEL = { investigate_start: '开始排查', investigate_end: '结束排查' };
+      const STALE_MS = 24 * 60 * 60 * 1000;
+
+      let data = { projects: [], items: [], events: [] };
+      let filter = '';
+      let cursor = 0;
+      let expanded = new Set();
+      let offline = false;
+
+      const $projects = document.getElementById('projects');
+      const $stream = document.getElementById('stream');
+      const $stats = document.getElementById('stats');
+      const $filter = document.getElementById('filter');
+
+      function esc(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+      }
+
+      function age(iso) {
+        const ms = Date.now() - new Date(iso).getTime();
+        if (!Number.isFinite(ms)) return '-';
+        const min = Math.floor(ms / 60000);
+        if (min < 1) return '刚刚';
+        if (min < 60) return `${min}m`;
+        const hour = Math.floor(min / 60);
+        if (hour < 24) return `${hour}h`;
+        return `${Math.floor(hour / 24)}d`;
+      }
+
+      function dur(ms) {
+        if (!Number.isFinite(ms)) return '-';
+        const min = Math.round(ms / 60000);
+        if (min < 1) return '<1m';
+        if (min < 60) return `${min}m`;
+        return `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}m`;
+      }
+
+      /** 排查列：进行中显示实时秒表，已结束显示累计耗时 */
+      function probeCell(item) {
+        if (item.investigating) {
+          return `<span class="probing"><span class="dot"></span>排查中 ${age(item.investigating.since)}</span>`;
+        }
+        if (item.investigateCount) {
+          return `<span class="probed">已排查 ${dur(item.investigateMs)}×${item.investigateCount}</span>`;
+        }
+        return '—';
+      }
+
+      function clock(iso) {
+        const d = new Date(iso);
+        return Number.isNaN(d.getTime()) ? '--:--:--' : d.toTimeString().slice(0, 8);
+      }
+
+      function matches(item) {
+        if (!filter) return true;
+        const probe = item.investigating ? '排查中 investigating' : item.investigateCount ? '已排查' : '';
+        return `${item.project} ${item.id} ${item.kind} ${KIND_LABEL[item.kind] ?? ''} ${item.status} ${STATUS_LABEL[item.status] ?? ''} ${item.title} ${item.progress} ${item.actor} ${item.branch} ${probe}`
+          .toLowerCase()
+          .includes(filter);
+      }
+
+      /** 扁平化当前可见行，供 j/k 光标与 Enter 展开使用 */
+      function visibleRows() {
+        const rows = [];
+        for (const project of data.projects) {
+          const own = data.items.filter((item) => item.project === project.project && matches(item));
+          if (own.length === 0 && filter) continue;
+          // 正在排查的永远置顶，其次按状态紧急度，同状态下线上问题优先
+          own.sort((a, b) => {
+            if (Boolean(a.investigating) !== Boolean(b.investigating)) return a.investigating ? -1 : 1;
+            const byStatus = STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status);
+            if (byStatus !== 0) return byStatus;
+            const byKind = KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind);
+            if (byKind !== 0) return byKind;
+            return b.updatedAt.localeCompare(a.updatedAt);
+          });
+          rows.push({ type: 'project', project, items: own });
+        }
+        return rows;
+      }
+
+      function renderStats() {
+        const active = data.items.filter((i) => !CLOSED.has(i.status)).length;
+        const probing = data.items.filter((i) => i.investigating).length;
+        const pending = data.items.filter((i) => i.status === 'pending').length;
+        const agents = new Set();
+        for (const p of data.projects) for (const a of p.agents) agents.add(`${a.agent}:${a.actor}`);
+        const last = data.events[0]?.at ?? data.generatedAt;
+        $stats.innerHTML = [
+          `<span class="stat">项目 <b>${data.projects.length}</b></span>`,
+          `<span class="stat ${probing ? 'hot' : ''}">正在排查 <b>${probing}</b></span>`,
+          `<span class="stat">待确认 <b>${pending}</b></span>`,
+          `<span class="stat">未完成 <b>${active}</b></span>`,
+          `<span class="stat">条目 <b>${data.items.length}</b></span>`,
+          `<span class="stat">agent <b>${agents.size}</b></span>`,
+          `<span class="stat">最后事件 <b>${last ? age(last) : '-'}</b></span>`,
+          offline ? '<span class="stat offline">服务未响应</span>' : '',
+        ].join('');
+      }
+
+      function renderTimeline(item) {
+        const rows = [...(item.timeline ?? [])]
+          .reverse()
+          .map((entry) => {
+            const mark = entry.event && EVENT_LABEL[entry.event]
+              ? `<span class="probing">[${EVENT_LABEL[entry.event]}${entry.durationMs != null ? ` 耗时 ${dur(entry.durationMs)}` : ''}]</span>`
+              : '';
+            return `<div class="tl-row"><time>${clock(entry.at)}</time><span class="s-${entry.status}"><span class="dot"></span>${esc(STATUS_LABEL[entry.status] ?? entry.status)}</span>${mark}<span>${esc(entry.progress || '（无进度描述）')}</span><span style="color:var(--fg-faint)">${esc(entry.actor ?? '')}</span></div>`;
+          })
+          .join('');
+        const refs = (item.refs ?? []).length
+          ? `<div class="refs">refs: ${item.refs.map((r) => (/^https?:/.test(r) ? `<a href="${esc(r)}" target="_blank" rel="noreferrer">${esc(r)}</a>` : esc(r))).join(' · ')}</div>`
+          : '';
+        const probe = item.investigating
+          ? `<span class="probing"> · 本次排查已进行 ${age(item.investigating.since)}</span>`
+          : item.investigateCount
+            ? ` · 排查 ${item.investigateCount} 次共 ${dur(item.investigateMs)}`
+            : '';
+        return `<tr class="timeline"><td colspan="9">${rows}${refs}<div style="color:var(--fg-faint);margin-top:4px">上报 ${item.reportCount} 次 · 创建于 ${clock(item.createdAt)}${probe}</div></td></tr>`;
+      }
+
+      function render() {
+        renderStats();
+
+        const rows = visibleRows();
+        let flatIndex = 0;
+        const flat = [];
+
+        const html = rows
+          .map((group) => {
+            const p = group.project;
+            const counts = p.counts;
+            const meta = [
+              `<span class="pill">未完成 <b>${counts.total - counts.done - (counts.rejected ?? 0)}</b></span>`,
+              counts.investigating ? `<span class="pill probing"><span class="dot"></span>排查中 ${counts.investigating}</span>` : '',
+              counts.incident ? `<span class="pill" style="color:var(--incident)">线上 ${counts.incident}</span>` : '',
+              counts.blocked ? `<span class="pill s-blocked"><span class="dot"></span>${counts.blocked}</span>` : '',
+              counts.in_progress ? `<span class="pill s-in_progress"><span class="dot"></span>${counts.in_progress}</span>` : '',
+              counts.review ? `<span class="pill s-review"><span class="dot"></span>${counts.review}</span>` : '',
+              counts.pending ? `<span class="pill s-pending"><span class="dot"></span>待确认 ${counts.pending}</span>` : '',
+              counts.confirmed ? `<span class="pill s-confirmed"><span class="dot"></span>${counts.confirmed}</span>` : '',
+              counts.done ? `<span class="pill s-done"><span class="dot"></span>${counts.done}</span>` : '',
+              counts.rejected ? `<span class="pill s-rejected"><span class="dot"></span>${counts.rejected}</span>` : '',
+              `<span>${esc(p.agents.map((a) => a.agent).filter((v, i, arr) => arr.indexOf(v) === i).join('/') || '-')}</span>`,
+              `<span>${esc(p.branches.slice(-2).join(' ') || '-')}</span>`,
+              `<span>活跃 ${age(p.lastSeenAt)}前</span>`,
+            ]
+              .filter(Boolean)
+              .join('');
+
+            const body = group.items
+              .map((item) => {
+                const index = flatIndex++;
+                flat.push(item);
+                const idle = Date.now() - new Date(item.updatedAt).getTime() > STALE_MS && !CLOSED.has(item.status);
+                const rotting = idle && item.status === 'pending';
+                const tr = `<tr data-index="${index}" data-key="${esc(item.project)}::${esc(item.id)}" class="${index === cursor ? 'cursor' : ''} ${idle && !rotting ? 'stale' : ''} ${rotting ? 'rotting' : ''} ${item.investigating ? 'probing-row' : ''}">
+                    <td class="c-kind ${item.kind === 'incident' ? 'k-incident' : ''}">${esc(KIND_LABEL[item.kind] ?? item.kind)}</td>
+                    <td class="c-id">${esc(item.id)}</td>
+                    <td class="c-title">${esc(item.title)}</td>
+                    <td class="c-status s-${item.status}"><span class="dot"></span>${esc(STATUS_LABEL[item.status] ?? item.status)}</td>
+                    <td class="c-probe">${probeCell(item)}</td>
+                    <td class="c-progress">${esc(item.progress || '—')}</td>
+                    <td class="c-actor">${esc(item.actor)}</td>
+                    <td class="c-branch" title="${esc(item.branch)}">${esc(item.branch || '—')}</td>
+                    <td class="c-age">${age(item.updatedAt)}</td>
+                  </tr>`;
+                const key = `${item.project}::${item.id}`;
+                return expanded.has(key) ? tr + renderTimeline(item) : tr;
+              })
+              .join('');
+
+            return `<div class="project">
+                <div class="project-head"><span class="project-name">${esc(p.project)}</span><div class="project-meta">${meta}</div></div>
+                <table>
+                  <thead><tr>
+                    <th class="c-kind">类型</th><th class="c-id">ID</th><th>标题</th><th class="c-status">状态</th><th class="c-probe">排查</th>
+                    <th>最后进度</th><th class="c-actor">负责人</th><th class="c-branch">分支</th><th class="c-age">距今</th>
+                  </tr></thead>
+                  <tbody>${body || '<tr><td colspan="9" style="color:var(--fg-faint)">仅有心跳，暂无上报条目</td></tr>'}</tbody>
+                </table>
+              </div>`;
+          })
+          .join('');
+
+        $projects.innerHTML = html || `<div class="empty">${filter ? '没有匹配的条目' : '暂无数据，等待 agent 上报…'}</div>`;
+        window.__flat = flat;
+        if (cursor >= flat.length) cursor = Math.max(0, flat.length - 1);
+
+        $stream.innerHTML =
+          data.events
+            .map((ev) => {
+              if (ev.type === 'ping') {
+                const text = `心跳 ${ev.agent ?? ''} ${ev.branch ? `@${ev.branch}` : ''}`;
+                return `<div class="ev"><time>${clock(ev.at)}</time><div class="ev-body"><span class="ev-proj">${esc(ev.project)}</span> <span class="ev-text">${esc(text)}</span></div></div>`;
+              }
+              const inv = ev.investigation;
+              const action = inv
+                ? inv.duplicated
+                  ? '排查中续报'
+                  : `${EVENT_LABEL[inv.type] ?? inv.type}${inv.durationMs != null ? `（耗时 ${dur(inv.durationMs)}）` : ''}`
+                : ev.resolution === 'created'
+                  ? '新建'
+                  : '更新';
+              const text = `${ev.itemId ?? ''} ${ev.item?.progress || ev.item?.title || ''}`;
+              return `<div class="ev"><time>${clock(ev.at)}</time><div class="ev-body"><span class="ev-proj">${esc(ev.project)}</span> <span class="${inv ? 'probing' : ''}">${esc(action)}</span> <span class="ev-text">${esc(text)}</span></div></div>`;
+            })
+            .join('') || '<div class="ev">暂无事件</div>';
+      }
+
+      function toggleExpand(index) {
+        const item = window.__flat?.[index];
+        if (!item) return;
+        const key = `${item.project}::${item.id}`;
+        if (expanded.has(key)) expanded.delete(key);
+        else expanded.add(key);
+        render();
+      }
+
+      $projects.addEventListener('click', (event) => {
+        const tr = event.target.closest('tr[data-index]');
+        if (!tr) return;
+        cursor = Number(tr.dataset.index);
+        toggleExpand(cursor);
+      });
+
+      $filter.addEventListener('input', () => {
+        filter = $filter.value.trim().toLowerCase();
+        cursor = 0;
+        render();
+      });
+
+      const $installPanel = document.getElementById('install-panel');
+      const $installCmd = document.getElementById('install-cmd');
+      const $installToggle = document.getElementById('install-toggle');
+      const $installCopy = document.getElementById('install-copy');
+      const $installCopyStatus = document.getElementById('install-copy-status');
+
+      function installCommand() {
+        const origin = location.origin.replace(/\/$/, '');
+        return `curl -fsSL "${origin}/install.mjs" | node --input-type=module - --yes`;
+      }
+
+      $installCmd.textContent = installCommand();
+
+      $installToggle.addEventListener('click', () => {
+        $installPanel.classList.toggle('open');
+        $installCmd.textContent = installCommand();
+      });
+
+      $installCopy.addEventListener('click', async () => {
+        const cmd = installCommand();
+        try {
+          await navigator.clipboard.writeText(cmd);
+        } catch {
+          const ta = document.createElement('textarea');
+          ta.value = cmd;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          ta.remove();
+        }
+        $installCopyStatus.hidden = false;
+        setTimeout(() => { $installCopyStatus.hidden = true; }, 1500);
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.target === $filter) {
+          if (event.key === 'Escape') {
+            $filter.value = '';
+            filter = '';
+            $filter.blur();
+            render();
+          }
+          return;
+        }
+        if (event.key === '/') {
+          event.preventDefault();
+          $filter.focus();
+          return;
+        }
+        const total = window.__flat?.length ?? 0;
+        if (event.key === 'j' && total) {
+          cursor = Math.min(total - 1, cursor + 1);
+          render();
+          document.querySelector('tr.cursor')?.scrollIntoView({ block: 'nearest' });
+        } else if (event.key === 'k' && total) {
+          cursor = Math.max(0, cursor - 1);
+          render();
+          document.querySelector('tr.cursor')?.scrollIntoView({ block: 'nearest' });
+        } else if (event.key === 'Enter' && total) {
+          toggleExpand(cursor);
+        }
+      });
+
+      async function poll() {
+        try {
+          const res = await fetch('/api/board', { cache: 'no-store' });
+          data = await res.json();
+          offline = false;
+        } catch {
+          offline = true;
+        }
+        render();
+      }
+
+      poll();
+      setInterval(poll, 5000);
+    </script>
+  </body>
+</html>

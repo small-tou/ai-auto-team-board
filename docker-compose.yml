@@ -1,0 +1,25 @@
+# 一键启动：docker compose up -d --build
+# 数据持久化在 ./data，与本机 npm start 共用同一目录约定
+services:
+  autoboard:
+    build: .
+    image: autoboard:latest
+    container_name: autoboard
+    restart: unless-stopped
+    ports:
+      - "${BOARD_PORT:-7788}:7788"
+    environment:
+      BOARD_HOST: "0.0.0.0"
+      BOARD_PORT: "7788"
+      BOARD_DATA_DIR: /app/data
+      # 可选：写接口鉴权，设置后上报需带 Authorization: Bearer <token>
+      BOARD_TOKEN: "${BOARD_TOKEN:-}"
+      # 可选：站点标题与 favicon（自定义图标可挂载覆盖 /app/public/favicon.svg）
+      BOARD_TITLE: "${BOARD_TITLE:-AutoBoard}"
+      BOARD_ICON: "${BOARD_ICON:-/favicon.svg}"
+    volumes:
+      # 事件日志与快照，宿主机目录，容器重建不丢数据
+      - ${BOARD_DATA_DIR:-./data}:/app/data
+      # 可选：自定义 favicon（取消注释并准备 ./brand/favicon.svg）
+      # - ./brand/favicon.svg:/app/public/favicon.svg:ro
+    # 单实例即可：store 是单写入者追加写，不要 --scale

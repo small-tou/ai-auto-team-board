@@ -1,0 +1,1 @@
+../../../.cursor/skills/AutoBoard上报/SKILL.md

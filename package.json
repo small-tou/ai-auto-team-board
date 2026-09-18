@@ -1,0 +1,18 @@
+{
+  "name": "autoboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AutoBoard：AI agent 全自动记录各项目的 bug/feature/线上排查进展",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "bin": {
+    "board-report": "./bin/board-report.mjs"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "report": "node bin/board-report.mjs",
+    "install-agents": "node bin/install-agents.mjs"
+  }
+}
