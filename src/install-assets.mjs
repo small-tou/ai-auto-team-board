@@ -131,6 +131,33 @@ export function patchAgentsFile(repo, agentsSection, dryRun = false) {
   return { action: existing ? 'appended' : 'created' };
 }
 
+/**
+ * Claude Code reads CLAUDE.md, not AGENTS.md. Prefer the official import so both
+ * tools share one copy of the AutoBoard section without duplicating it.
+ * See https://code.claude.com/docs/en/claude-md
+ */
+export function ensureClaudeMd(repo, dryRun = false) {
+  const file = join(repo, 'CLAUDE.md');
+  if (!existsSync(file)) {
+    if (!dryRun) writeFileSync(file, '@AGENTS.md\n', 'utf8');
+    return { action: 'created', reason: 'import AGENTS.md' };
+  }
+
+  const existing = readFileSync(file, 'utf8');
+  if (/(^|\n)@AGENTS\.md\b/.test(existing)) {
+    return { action: 'unchanged', reason: 'already imports AGENTS.md' };
+  }
+
+  // Already carries the same marked section (manual copy or older install).
+  if (existing.includes(AGENTS_MARKER)) {
+    return { action: 'unchanged', reason: 'has autoboard section' };
+  }
+
+  const next = `@AGENTS.md\n\n${existing.replace(/^\uFEFF/, '')}`;
+  if (!dryRun) writeFileSync(file, next, 'utf8');
+  return { action: 'updated', reason: 'prepended @AGENTS.md' };
+}
+
 function removeLegacySkillDirs(repo, dryRun) {
   for (const root of [
     join(repo, '.cursor', 'skills'),
@@ -146,8 +173,8 @@ function removeLegacySkillDirs(repo, dryRun) {
 }
 
 /**
- * 把 skill + AGENTS.md 写入目标 git 仓库。
- * @returns {{ ok: boolean, agents?: object, reason?: string }}
+ * Write skill + AGENTS.md + CLAUDE.md import into a target git repo.
+ * @returns {{ ok: boolean, agents?: object, claude?: object, reason?: string }}
  */
 export function installIntoRepo(repo, { skillMd, agentsSection, dryRun = false } = {}) {
   if (!existsSync(join(repo, '.git'))) {
@@ -166,11 +193,12 @@ export function installIntoRepo(repo, { skillMd, agentsSection, dryRun = false }
     writeFileSync(join(cursorDir, 'SKILL.md'), skillMd, 'utf8');
     for (const dir of linkRoots) {
       mkdirSync(dir, { recursive: true });
-      // 软链文件而不是目录：目录软链在 isDirectory() 判定下可能被技能发现逻辑跳过
+      // Symlink the file (not the dir): dir symlinks may be skipped by skill discovery.
       ensureSymlink(join(dir, 'SKILL.md'), SKILL_LINK_TARGET);
     }
   }
 
   const agents = patchAgentsFile(repo, agentsSection, dryRun);
-  return { ok: true, agents };
+  const claude = ensureClaudeMd(repo, dryRun);
+  return { ok: true, agents, claude };
 }

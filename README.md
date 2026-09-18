@@ -1,6 +1,6 @@
 # AutoBoard
 
-Self-hosted board for AI agents (Cursor / Codex): track which incidents, bugs, and features are in flight across your projects — status and latest progress on one page.
+Self-hosted board for AI agents (Cursor / Codex / Claude Code): track which incidents, bugs, and features are in flight across your projects — status and latest progress on one page.
 
 Requires Node >= 22. Zero runtime dependencies.
 
@@ -150,6 +150,7 @@ Writes:
 - `.cursor/skills/autoboard-report/SKILL.md`
 - `.codex/skills/…` and `.claude/skills/…` symlinks to that file
 - an `AGENTS.md` section (markers `<!-- autoboard:begin/end -->`)
+- `CLAUDE.md` with `@AGENTS.md` so Claude Code loads the same rules (Claude Code does not read `AGENTS.md` directly)
 
 Commit those files so teammates get the same board URL.
 

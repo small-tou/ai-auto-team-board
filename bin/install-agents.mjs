@@ -12,6 +12,7 @@
  *   <repo>/.cursor/skills/autoboard-report/SKILL.md
  *   <repo>/.codex/skills/…/SKILL.md and .claude/skills/…/SKILL.md  → symlink to the above
  *   <repo>/AGENTS.md  append/update autoboard section
+ *   <repo>/CLAUDE.md  ensure `@AGENTS.md` import (Claude Code reads CLAUDE.md)
  *
  * Or from a target repo (no need to clone this repo):
  *   curl -fsSL "$BOARD_URL/install.mjs" | node --input-type=module - --yes
@@ -93,8 +94,9 @@ for (const repo of targets) {
     continue;
   }
   const agents = result.agents;
+  const claude = result.claude;
   console.log(
-    `  ${dryRun ? '[检查]' : '[已装]'} ${label}  技能✓  .codex/.claude 软链✓  AGENTS.md ${agents.action}${agents.reason ? `（${agents.reason}）` : ''}`,
+    `  ${dryRun ? '[检查]' : '[已装]'} ${label}  技能✓  .codex/.claude 软链✓  AGENTS.md ${agents.action}${agents.reason ? `（${agents.reason}）` : ''}  CLAUDE.md ${claude.action}${claude.reason ? `（${claude.reason}）` : ''}`,
   );
 }
 console.log(`\n可选 CLI：${CLI_PATH}`);

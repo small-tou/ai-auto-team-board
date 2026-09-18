@@ -1,6 +1,6 @@
 # AutoBoard
 
-自托管看板，面向 AI Agent（Cursor / Codex）：汇总各项目正在排查的线上问题、缺陷与需求——状态与最新进展一页看清。
+自托管看板，面向 AI Agent（Cursor / Codex / Claude Code）：汇总各项目正在排查的线上问题、缺陷与需求——状态与最新进展一页看清。
 
 要求 Node >= 22。零运行时依赖。
 
@@ -150,6 +150,7 @@ curl -fsSL "https://board.example.com/install.mjs" | node --input-type=module - 
 - `.cursor/skills/autoboard-report/SKILL.md`
 - `.codex/skills/…` 与 `.claude/skills/…` 指向该文件的符号链接
 - `AGENTS.md` 中一段说明（标记 `<!-- autoboard:begin/end -->`）
+- `CLAUDE.md` 写入 `@AGENTS.md` 引用（Claude Code 不直接读 `AGENTS.md`，需通过 `CLAUDE.md` 加载）
 
 把这些文件提交进仓库，队友就会共用同一个看板 URL。
 

@@ -72,6 +72,27 @@ function patchAgentsFile(repo, bundle, dryRun) {
   return { action: existing ? 'appended' : 'created' };
 }
 
+/** Claude Code reads CLAUDE.md; import AGENTS.md so rules stay in one place. */
+function ensureClaudeMd(repo, bundle, dryRun) {
+  const file = join(repo, 'CLAUDE.md');
+  if (!existsSync(file)) {
+    if (!dryRun) writeFileSync(file, '@AGENTS.md\n', 'utf8');
+    return { action: 'created', reason: 'import AGENTS.md' };
+  }
+
+  const existing = readFileSync(file, 'utf8');
+  if (/(^|\n)@AGENTS\.md\b/.test(existing)) {
+    return { action: 'unchanged', reason: 'already imports AGENTS.md' };
+  }
+  if (bundle.agentsMarker && existing.includes(bundle.agentsMarker)) {
+    return { action: 'unchanged', reason: 'has autoboard section' };
+  }
+
+  const next = `@AGENTS.md\n\n${existing.replace(/^\uFEFF/, '')}`;
+  if (!dryRun) writeFileSync(file, next, 'utf8');
+  return { action: 'updated', reason: 'prepended @AGENTS.md' };
+}
+
 function removeLegacySkillDirs(repo, legacyNames, dryRun) {
   const names = Array.isArray(legacyNames) ? legacyNames : legacyNames ? [legacyNames] : [];
   for (const root of [
@@ -107,7 +128,9 @@ function install(repo, bundle, dryRun) {
     }
   }
 
-  return patchAgentsFile(repo, bundle, dryRun);
+  const agents = patchAgentsFile(repo, bundle, dryRun);
+  const claude = ensureClaudeMd(repo, bundle, dryRun);
+  return { agents, claude };
 }
 
 function askYes(question) {
@@ -160,6 +183,7 @@ async function main() {
     `.codex/skills/${skillName}/SKILL.md`,
     `.claude/skills/${skillName}/SKILL.md`,
     `AGENTS.md`,
+    `CLAUDE.md`,
   ];
   console.log('将写入：');
   for (const p of paths) console.log(`  ${p}`);
@@ -176,9 +200,9 @@ async function main() {
     }
   }
 
-  const agents = install(repo, bundle, dryRun);
+  const { agents, claude } = install(repo, bundle, dryRun);
   console.log(
-    `${dryRun ? '[检查]' : '[已装]'} ${label}  技能✓  .codex/.claude 软链✓  AGENTS.md ${agents.action}${agents.reason ? `（${agents.reason}）` : ''}`,
+    `${dryRun ? '[检查]' : '[已装]'} ${label}  技能✓  .codex/.claude 软链✓  AGENTS.md ${agents.action}${agents.reason ? `（${agents.reason}）` : ''}  CLAUDE.md ${claude.action}${claude.reason ? `（${claude.reason}）` : ''}`,
   );
   if (!dryRun) {
     console.log('\n请把上述文件提交到本仓库，同事拉取后 agent 会按规则上报到同一看板。');

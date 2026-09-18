@@ -243,19 +243,19 @@
       <span class="brand">__BOARD_TITLE__</span>
       <div class="stats" id="stats"></div>
       <span class="spacer"></span>
-      <button type="button" class="install-btn" id="install-toggle" title="把 skill 与 AGENTS.md 装进业务仓库">安装到项目</button>
+      <button type="button" class="install-btn" id="install-toggle" title="把 skill、AGENTS.md 与 CLAUDE.md 装进业务仓库">安装到项目</button>
       <input id="filter" placeholder="过滤 项目/标题/负责人/状态…" autocomplete="off" />
       <span class="hint"><kbd>/</kbd> 过滤 <kbd>j</kbd><kbd>k</kbd> 移动 <kbd>↵</kbd> 展开</span>
     </header>
 
     <div class="install-panel" id="install-panel">
-      <p>在<strong>要上报的 git 仓库根目录</strong>执行下面命令，写入 skill 与 <code>AGENTS.md</code>，再提交到该仓库。</p>
+      <p>在<strong>要上报的 git 仓库根目录</strong>执行下面命令，写入 skill、<code>AGENTS.md</code> 与 <code>CLAUDE.md</code>，再提交到该仓库。</p>
       <code class="cmd" id="install-cmd"></code>
       <div class="install-actions">
         <button type="button" id="install-copy">复制命令</button>
         <span id="install-copy-status" class="copied" hidden>已复制</span>
       </div>
-      <p>1. 仓库根执行 → 2. 提交变更 → 3. Cursor / Codex / Claude 会按规则上报到本看板。</p>
+      <p>1. 仓库根执行 → 2. 提交变更 → 3. Cursor / Codex / Claude Code 会按规则上报到本看板。</p>
     </div>
 
     <main>

@@ -106,7 +106,7 @@ curl -s -X POST https://autoboard.html-js.com/api/report -H 'content-type: appli
 | `title` | 是 | 一句话说清是什么问题/需求。**同一件事必须每次用完全相同的标题**，看板靠标题归一化去重 |
 | `progress` | 是 | 本轮进展，简体中文一句话，写「做了什么 / 卡在哪」而不是「我在处理这个问题」 |
 | `actor` | 强烈建议 | 负责人。不知道就先跑 `git config user.name`，缺省会记成 `unknown` |
-| `agent` | 否 | `cursor` \| `codex` \| `claude`，填你自己所处的工具 |
+| `agent` | 否 | `cursor` \| `codex` \| `claude`，填你自己所处的工具（Claude Code 填 `claude`） |
 | `kind` | 否 | `incident` \| `bug` \| `feature` \| `chore`，默认 `feature` |
 | `status` | 否 | 见下表七个值。新建不传默认 `pending`；更新时不传则**保持原状态**，只想追加进展就别带 |
 | `event` | 否 | 只在排查时用：`start` 开始排查 / `end` 结束排查。普通进展不要带 |

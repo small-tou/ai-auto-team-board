@@ -13,7 +13,7 @@ Auto board service: AI agents automatically record progress across projects. Zer
 | `src/remote-install.mjs` | Standalone installer served as `GET /install.mjs` |
 | `public/index.html` | Single-file board UI; no framework, no build step |
 | `bin/board-report.mjs` | Unified report entry; hook and CLI dual mode |
-| `bin/install-agents.mjs` | Local installer into target repos (default: cwd) |
+| `bin/install-agents.mjs` | Local installer into target repos (default: cwd); also ensures `CLAUDE.md` imports `AGENTS.md` |
 | `skills/autoboard-report/SKILL.md` | Skill body template; `<BOARD_URL>` replaced on install |
 
 ## Hard Constraints

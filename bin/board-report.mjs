@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * AutoBoard 统一上报入口。各模式共用同一套项目解析与容错逻辑：
- *   hook  ：`board-report.mjs hook`，从 stdin 读 Cursor / Codex 的 hook payload，只发心跳
+ *   hook  ：`board-report.mjs hook`，从 stdin 读 Cursor / Codex / Claude Code 的 hook payload，只发心跳
  *   item  ：`board-report.mjs item --kind bug --title "..." --status in_progress --progress "..."`
  *   start ：`board-report.mjs start --title "线上问题" --progress "..."`  开始排查，默认 kind=incident
  *   end   ：`board-report.mjs end --title "线上问题" --status done --progress "..."`  结束排查并记耗时
@@ -35,20 +35,34 @@ function git(args, cwd) {
 }
 
 /**
- * 解析项目根目录。Cursor 用户级 hook 的进程 cwd 是 ~/.cursor，不能直接用，
- * 所以优先读 payload 里的 workspace_roots；Codex hook 才靠 cwd。
+ * Resolve the project root. Cursor user-level hooks often have cwd under ~/.cursor,
+ * so prefer workspace_roots from the payload; Codex / Claude Code can use cwd.
  */
 function resolveRepoRoot(payload) {
   const candidates = [];
   const roots = payload.workspace_roots ?? payload.workspaceRoots;
   if (Array.isArray(roots)) candidates.push(...roots);
   else if (typeof roots === 'string') candidates.push(roots);
-  candidates.push(payload.workspace_root, payload.cwd, payload.working_directory, process.env.PWD, process.cwd());
+  // Claude Code sets CLAUDE_PROJECT_DIR for hooks and MCP servers.
+  candidates.push(
+    process.env.CLAUDE_PROJECT_DIR,
+    payload.workspace_root,
+    payload.cwd,
+    payload.working_directory,
+    process.env.PWD,
+    process.cwd(),
+  );
 
   for (const candidate of candidates) {
     if (typeof candidate !== 'string' || !candidate.trim()) continue;
     const dir = resolve(candidate.trim());
-    if (dir === homedir() || dir.startsWith(join(homedir(), '.cursor')) || dir.startsWith(join(homedir(), '.codex'))) {
+    const home = homedir();
+    if (
+      dir === home ||
+      dir.startsWith(join(home, '.cursor')) ||
+      dir.startsWith(join(home, '.codex')) ||
+      dir.startsWith(join(home, '.claude'))
+    ) {
       continue;
     }
     if (!existsSync(dir)) continue;
@@ -59,7 +73,16 @@ function resolveRepoRoot(payload) {
 
 function detectAgent(payload) {
   if (process.env.BOARD_AGENT) return process.env.BOARD_AGENT;
-  // Codex hook 事件名是 PascalCase，Cursor 是 camelCase，可据此区分
+  // Claude Code exports CLAUDE_PROJECT_DIR for hooks; check before PascalCase events
+  // (Claude hook names look like Codex: UserPromptSubmit, SessionStart, …).
+  if (
+    process.env.CLAUDE_PROJECT_DIR ||
+    process.env.CLAUDECODE ||
+    process.env.CLAUDE_CODE_ENTRYPOINT
+  ) {
+    return 'claude';
+  }
+  // Codex hook events are PascalCase; Cursor uses camelCase.
   const event = payload.hook_event_name ?? payload.hookEventName ?? '';
   if (/^[A-Z]/.test(event)) return 'codex';
   if (event) return 'cursor';
@@ -190,7 +213,7 @@ async function runItem(argv, defaults = {}) {
       '缺少 --title。用法：\n' +
         '  board-report item  --kind incident|bug|feature|chore --title "..." --progress "..."\n' +
         '                     --status pending|confirmed|in_progress|review|blocked|done|rejected\n' +
-        '                     [--id ID] [--ref URL] [--agent cursor|codex] [--project NAME]\n' +
+        '                     [--id ID] [--ref URL] [--agent cursor|codex|claude] [--project NAME]\n' +
         '  board-report start --title "线上问题一句话" --progress "现象/线索"            # 开始排查，默认 kind=incident\n' +
         '  board-report end   --title "同一个标题" --status done --progress "结论"       # 结束排查，记录耗时',
     );

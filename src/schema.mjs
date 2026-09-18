@@ -138,7 +138,17 @@ export function normalizeStatus(value) {
 }
 
 export function normalizeAgent(value) {
-  return pickEnum(value, AGENTS, {}, 'other');
+  return pickEnum(
+    value,
+    AGENTS,
+    {
+      'claude-code': 'claude',
+      claude_code: 'claude',
+      claudecode: 'claude',
+      anthropic: 'claude',
+    },
+    'other',
+  );
 }
 
 export function normalizeItemEvent(value) {
